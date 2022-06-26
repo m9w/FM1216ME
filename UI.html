@@ -1,0 +1,142 @@
+<style>
+    button:not([disabled]){cursor: pointer;}
+    button.en{color: limegreen; border-color: limegreen;}
+    button{color: darkred; font-weight: bold; width: 60px; height: 30px; margin: 3px; border-color: darkred;}
+    .inx{ text-align: right;width: 30px;display: inline-block;}
+</style>
+
+<input id=open type=submit value=Open>
+<input id=close type=submit value=Close>
+
+<h2>Tuner</h2>
+<span class=inx>DB1</span>
+<button disabled>0</button>
+<button>N14</button>
+<button>N13</button>
+<button>N12</button>
+<button>N11</button>
+<button>N10</button>
+<button>N9</button>
+<button>N8</button>
+<span class="byte"></span>
+<br>
+<span class=inx>DB2</span>
+<button>N7</button>
+<button>N6</button>
+<button>N5</button>
+<button>N4</button>
+<button>N3</button>
+<button>N2</button>
+<button>N1</button>
+<button>N0</button>
+<span class="byte"></span>
+<br>
+<span class=inx>CB</span>
+<button disabled class="en">1</button>
+<button>CP</button>
+<button>T2</button>
+<button>T1</button>
+<button>T0</button>
+<button>RCA</button>
+<button>RCB</button>
+<button>OS</button>
+<span class="byte"></span>
+<br>
+<span class=inx>BB</span>
+<button>SW</button>
+<button>FMST</button>
+<button>P5</button>
+<button>TV</button>
+<button>FM</button>
+<button>High</button>
+<button>Mid</button>
+<button>Low</button>
+<span class="byte"></span>
+<br>
+<span class=inx>AB</span>
+<button>ATC</button>
+<button>AL2</button>
+<button>AL1</button>
+<button>AL0</button>
+<button disabled>0</button>
+<button disabled>0</button>
+<button disabled>0</button>
+<button disabled>0</button>
+<span class="byte"></span>
+<br>
+
+<h2>IF</h2>
+<span class=inx>B</span>
+<button>L'</button>
+<button>FMS</button>
+<button>FMA</button>
+<button>TVM</button>
+<button>FM</button>
+<button>CM</button>
+<button>AMF</button>
+<button>VM</button>
+<span class="byte"></span>
+<br>
+<span class=inx>C</span>
+<button>AG</button>
+<button>DE1</button>
+<button>DE0</button>
+<button>TOP4</button>
+<button>TOP3</button>
+<button>TOP2</button>
+<button>TOP1</button>
+<button>TOP0</button>
+<span class="byte"></span>
+<br>
+<span class=inx>E</span>
+<button>AGC</button>
+<button>GATE</button>
+<button>GIF</button>
+<button>VIF2</button>
+<button>VIF1</button>
+<button>VIF0</button>
+<button>SIF1</button>
+<button>SIF0</button>
+<span class="byte"></span>
+<br>
+<input id=send type=submit value=Send> <span id=OUT></span>
+
+<script>
+function hexToBase64(hexstring) {
+    return btoa(hexstring.match(/\w{2}/g).map(function(a) {
+        return String.fromCharCode(parseInt(a, 16));
+    }).join(""));
+}
+
+for(el of document.getElementsByTagName("button")){
+  el.addEventListener("click", function(e){
+    e.target.classList.toggle("en");
+    calc();
+  });
+}
+var port;
+document.querySelector('#open').addEventListener('click', () => {
+  navigator.serial.requestPort().then((p)=>{
+    port = p;
+    port.open({ baudrate: 115200 }).then(()=>{alert("Opened")}).catch((err)=>{alert(err)});
+  }).catch((err)=>{alert(err)}); 
+});
+
+document.querySelector('#close').addEventListener('click', () => {
+  port.close().catch((err)=>{alert(err)});
+});
+
+document.querySelector('#send').addEventListener('click', async () => {
+  var writer = port.writable.getWriter();
+  var x = ('$'+document.querySelector("#OUT").innerText).split('').map(x=>x.charCodeAt(0));
+  writer.write(new Uint8Array(x)).catch((err)=>{alert(err)});;
+  writer.releaseLock();
+});
+
+function calc(){
+  var hex = [...document.getElementsByTagName("button")].map(x=>x.classList.contains("en")?1:0).join('').match(/.{8}/g).map(x=>parseInt(x,2).toString(16).padStart(2, '0')).join("");
+  for(var i=0; i<8; i++) document.querySelectorAll(".byte")[i].innerText = "0x" + hex.match(/.{2}/g)[i].toUpperCase();
+  document.querySelector("#OUT").innerText = hexToBase64(hex);
+}
+calc();
+</script>
